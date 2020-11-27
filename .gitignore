@@ -1,0 +1,6 @@
+echo
+*.out
+*.o
+*.d
+testcase/output*
+
