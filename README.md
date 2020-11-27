@@ -1,6 +1,6 @@
 # echo-test
-Echo-test is a test script for testing communication works without lossing data.
-You can easliy replace ./echo to your communication echo test program which uses stdin and stdout.
+Echo-test is a test script for testing echo communication works without lossing data.
+You can easliy replace ./echo to your communication echo test program which directs stdin and stdout as input and output respectively.
 
 ## Prerequisites
 * Python 3.5 and later is required
