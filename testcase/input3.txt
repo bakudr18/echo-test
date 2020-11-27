@@ -1,2 +1,2 @@
-you could easily replace ./echo to other echo program which use stdin and stdout
+you could easily replace ./echo to other echo program which uses stdin and stdout
 

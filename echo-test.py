@@ -121,7 +121,7 @@ def run(name, args):
     colored = False
     pydifflib = False
 
-    optlist, args = getopt.getopt(args, 'h:p:t:c', 'difflib')
+    optlist, args = getopt.getopt(args, 'hcp:t:', 'difflib')
     for (opt, val) in optlist:
         if opt == '-h':
             usage(name)
