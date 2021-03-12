@@ -30,4 +30,6 @@ clean:
 	$(HIDE)rm -f $(TESTDIR)/output*
 
 test: $(TARGET)
-	$(HIDE)python3 echo-test.py -p ./$(TARGET) -c -t1
+	$(HIDE)python3 echo-test.py --args ./$(TARGET) 1 -c -t1
+	$(HIDE)python3 echo-test.py --args ./$(TARGET) 2 -c -t1
+	$(HIDE)python3 echo-test.py ./$(TARGET) -c -t1

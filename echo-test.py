@@ -7,6 +7,7 @@ import getopt
 class Echotest:
     testDirectory = "./testcase"
     program = "./echo"
+    pargs = []
     command = program
     colored = False
     pydifflib = False
@@ -19,15 +20,18 @@ class Echotest:
     }
 
     testProbs = {}
-	
+    testLog = "log.txt"
+
     RED = '\033[91m'
     GREEN = '\033[92m'
     WHITE = '\033[0m'
     
-    def __init__(self, program = "", colored = False, pydifflib=False):
+    def __init__(self, program = "", pargs = [], colored = False, pydifflib=False):
         if program != "":
             self.program = program
             self.command = self.program
+            if pargs:
+                self.pargs = pargs
         self.colored = colored
         self.pydifflib = pydifflib
     
@@ -42,19 +46,16 @@ class Echotest:
         try:
             with open(finname, 'r') as self.fin, \
                  open(foutname, 'w+') as self.fout:
-                completed = subprocess.run(self.command, stdin=self.fin, stdout=self.fout)
-                retcode = completed.returncode
-                if retcode == 0:
-                    self.testProbs[tid] = os.path.basename(self.fout.name)
-                else:
-                    self.printInColor("ERROR: Execute '%s' errno = %d" % (self.command, retcode) , self.RED)
-                return retcode == 0
+                cmd = [self.command] + self.pargs
+                completed = subprocess.run(cmd, stdin=self.fin, stdout=self.fout, stderr=subprocess.STDOUT)
+                self.testProbs[tid] = os.path.basename(self.fout.name)
+                return completed.returncode
         except IOError as e:
             self.printInColor(e, self.RED)
-            return False 
+            return -e.errno 
         except Exception as e:
             self.printInColor("Call of '%s' failed: %s" % (self.command, e), self.RED)
-            return False
+            return -1
 
     def runDiff(self, tid):
         if not tid in self.testProbs:
@@ -91,6 +92,19 @@ class Echotest:
             except Exception as e:
                 self.printInColor(e, self.RED)
                 return False
+    
+    def showLog(self, tid, ret):
+        self.printInColor("Get returncode %d from %s run test" % (ret, self.program), self.RED)
+        stdout = os.path.join(self.testDirectory, self.testProbs[tid]);
+        log = os.path.join(self.testDirectory, self.testLog)
+        os.rename(stdout, log);
+        try:
+            with open(log, 'r') as l:
+                lines = l.read().splitlines();
+                for line in lines:
+                    self.printInColor(line, self.WHITE)
+        except Exception as e:
+            self.printInColor(e, self.RED)
 
     def run(self, tid = 0):
         if tid == 0:
@@ -102,31 +116,42 @@ class Echotest:
             tidList = [tid]
         
         for t in tidList: 
-            ok = self.runTest(t)
-            if ok:
+            ret = self.runTest(t)
+            if ret == 0:
                 self.runDiff(t)
+            else:
+                self.showLog(t, ret)
 
 def usage(name):
-    print("Usage: %s [-h] [-p PROG] [-t TID] [-c]" % name)
-    print("  -h         Print this message")
-    print("  -p PROG    Program to test")
-    print("  -t TID     Test ID to test")
-    print("  -c         Enable colored text")
-    print("  --difflib  Use python difflib module")
+    print("Usage: %s [--args] PROGRAM [OPTIONS]" % name)
+    print("  PROGRAM                        execute program")
+    print("  --args PROGRAM arg1 arg2 ...   execute program with args")
+    print("  -h                             Print this message")
+    print("  -t TID                         Test ID to test")
+    print("  -c                             Enable colored text")
+    print("  --difflib                      Use python difflib module")
     sys.exit(0)
 
 def run(name, args):
     prog = ""
+    pargs = []
     tid = 0
     colored = False
     pydifflib = False
-
-    optlist, args = getopt.getopt(args, 'hcp:t:', 'difflib')
+    
+    if(args[0] != '-h' and args[0] != '--args'):
+        prog = args[0]
+        args = args[1:]
+    elif args[0] == '--args':
+        prog = args[1]
+        args = args[2:]
+        while args[0][0] != '-':
+            pargs.append(args.pop(0))
+            
+    optlist, args = getopt.getopt(args, 'hct:', 'difflib')
     for (opt, val) in optlist:
         if opt == '-h':
             usage(name)
-        elif opt == '-p':
-            prog = val
         elif opt == '-t':
             tid = int(val)
         elif opt == '-c':
@@ -136,7 +161,8 @@ def run(name, args):
         else:
             print("Unrecognized option '%s'" %opt)
             usage(name)
-    et = Echotest(program=prog, 
+    et = Echotest(program=prog,
+                  pargs=pargs,
                   colored=colored,
                   pydifflib=pydifflib)
     et.run(tid)

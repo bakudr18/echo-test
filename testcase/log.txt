@@ -1,0 +1,1 @@
+stderr will also be written into output file. You should return non-zero to move output file to log file
